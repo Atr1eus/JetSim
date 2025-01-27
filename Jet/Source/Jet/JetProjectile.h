@@ -33,5 +33,10 @@ public:
 	USphereComponent* GetCollisionComp() const { return CollisionComp; }
 	/** Returns ProjectileMovement subobject **/
 	UProjectileMovementComponent* GetProjectileMovement() const { return ProjectileMovement; }
+
+protected:
+	UPROPERTY(EditAnywhere, Category = "Damage")
+	float Damage = 40.f;
+
 };
 

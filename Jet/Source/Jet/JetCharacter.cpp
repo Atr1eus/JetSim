@@ -11,7 +11,11 @@
 #include "InputActionValue.h"
 #include "Engine/LocalPlayer.h"
 
+#include "Public/Component/HealthComponent.h"
+
 #include "GameFramework/CharacterMovementComponent.h"
+#include <Kismet/KismetSystemLibrary.h>
+#include "Public/JetController.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -60,7 +64,12 @@ AJetCharacter::AJetCharacter()
 	DashRange = 1500.0f;        // 冲刺范围
 	KillsToRefresh = 2;         // 击杀/助攻后刷新次数
 	CurrentKills = 0;           // 初始击杀次数
+
+	// 生命值
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>("HP");
 }
+
+
 
 //////////////////////////////////////////////////////////////////////////// Input
 
@@ -106,6 +115,28 @@ void AJetCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	}
 }
 
+void AJetCharacter::Damage_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Damage"));
+	AJetController* PlayerController = Cast<AJetController>(GetController());
+	if (PlayerController != nullptr)
+	{
+		PlayerController->UpdateHealthPercent(HealthComponent->GetHealthPercent());
+	}
+
+}
+
+void AJetCharacter::Death_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Death"));
+	//UKismetSystemLibrary::QuitGame(this, nullptr, EQuitPreference::Quit, true);
+	AJetController* PlayerController = Cast<AJetController>(GetController());
+	if (PlayerController != nullptr)
+	{
+		PlayerController->ShowRestartWidget();
+	}
+}
+
 
 void AJetCharacter::UpdateDrift(float DeltaTime)
 {
@@ -140,6 +171,16 @@ void AJetCharacter::UpdateDrift(float DeltaTime)
 	}
 }
 
+void AJetCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	AJetController* PlayerController = Cast<AJetController>(GetController());
+	if (PlayerController != nullptr)
+	{
+		PlayerController->UpdateHealthPercent(HealthComponent->GetHealthPercent());
+	}
+}
+
 void AJetCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -150,6 +191,8 @@ void AJetCharacter::Tick(float DeltaTime)
 
 void AJetCharacter::Move(const FInputActionValue& Value)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Move"));
+
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
@@ -176,6 +219,7 @@ void AJetCharacter::Look(const FInputActionValue& Value)
 
 void AJetCharacter::StartJump(const FInputActionValue& Value)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Jump"));
 	bIsJumpPressed = true;
 	Jump();
 }

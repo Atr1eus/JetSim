@@ -4,6 +4,10 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
 
+#include "Public/Interface/HealthInterface.h"
+#include "JetCharacter.h"
+#include "Public/Component/HealthComponent.h"
+
 AJetProjectile::AJetProjectile() 
 {
 	// Use a sphere as a simple collision representation
@@ -38,6 +42,17 @@ void AJetProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPr
 	{
 		OtherComp->AddImpulseAtLocation(GetVelocity() * 100.0f, GetActorLocation());
 
+		Destroy();
+	}
+
+	AJetCharacter* Player = Cast<AJetCharacter>(OtherActor);
+	if (Player != nullptr)
+	{
+		UHealthComponent* HealthComponent = Player->FindComponentByClass<UHealthComponent>();
+		if (HealthComponent != nullptr)
+		{
+			HealthComponent->LoseHealth(Damage);
+		}
 		Destroy();
 	}
 }

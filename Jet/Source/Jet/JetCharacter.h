@@ -5,7 +5,13 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+
+#include "Public/Component/HealthComponent.h"
+#include "Public/Interface/HealthInterface.h"
+
 #include "JetCharacter.generated.h"
+
+
 
 class UInputComponent;
 class USkeletalMeshComponent;
@@ -13,6 +19,9 @@ class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
+
+//生命值
+class UHealthComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -28,7 +37,7 @@ enum class ESkillState : uint8
 };
 
 UCLASS(config=Game)
-class AJetCharacter : public ACharacter
+class AJetCharacter : public ACharacter, public IHealthInterface
 {
 	GENERATED_BODY()
 
@@ -56,6 +65,10 @@ class AJetCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> LookAction;
 	
+	//HUD Menu
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> EscAction;
+
 	//Skills
 	/** Updraft Input Action Q技能凌空*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -116,6 +129,8 @@ public:
 	FTimerHandle TailwindWindupTimer;
 
 protected:
+	virtual void BeginPlay() override;
+
 	//TICK
 	virtual void Tick(float DeltaTime) override;
 
@@ -124,6 +139,10 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+
+	//生命组件
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Component")
+	TObjectPtr<UHealthComponent> HealthComponent;
 
 	// Drift P 飘移
 	void StartJump(const FInputActionValue& Value);
@@ -151,6 +170,12 @@ public:
 	TObjectPtr<USkeletalMeshComponent> GetMesh1P() const { return Mesh1P; }
 	/** Returns FirstPersonCameraComponent subobject **/
 	TObjectPtr<UCameraComponent> GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+
+
+	// 通过 IHealthInterface 继承
+	void Damage_Implementation() override;
+
+	void Death_Implementation() override;
 
 };
 
