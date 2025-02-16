@@ -16,6 +16,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include <Kismet/KismetSystemLibrary.h>
 #include "Public/JetController.h"
+#include <Spike/InstZoneActor.h>
+#include <Spike/SpikeActor.h>
+#include "HUD/JetHUD.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -55,6 +58,10 @@ AJetCharacter::AJetCharacter()
 	bIsDrifting = false;
 	bIsJumpPressed = false;
 
+	//test
+	bIsPlayerInZone = true;
+	bIsSpikeInstalled = false;
+
 	//-------------Tailwind----------------
 	TailwindState = ESkillState::Idle;
 
@@ -67,6 +74,8 @@ AJetCharacter::AJetCharacter()
 
 	// 生命值
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>("HP");
+
+	SpikeComponent = CreateDefaultSubobject<USpikeInstComponent>("Spike");
 }
 
 
@@ -177,8 +186,12 @@ void AJetCharacter::BeginPlay()
 	AJetController* PlayerController = Cast<AJetController>(GetController());
 	if (PlayerController != nullptr)
 	{
+		PlayerController->ShowMenu();
 		PlayerController->UpdateHealthPercent(HealthComponent->GetHealthPercent());
+		JetHUD = Cast<AJetHUD>(PlayerController->GetHUD());
+		JetHUD->UpdateTailwindState(ESkillState::Idle);
 	}
+	
 }
 
 void AJetCharacter::Tick(float DeltaTime)
@@ -191,7 +204,7 @@ void AJetCharacter::Tick(float DeltaTime)
 
 void AJetCharacter::Move(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Move"));
+	//UE_LOG(LogTemp, Warning, TEXT("Move"));
 
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -219,7 +232,7 @@ void AJetCharacter::Look(const FInputActionValue& Value)
 
 void AJetCharacter::StartJump(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Jump"));
+	//UE_LOG(LogTemp, Warning, TEXT("Jump"));
 	bIsJumpPressed = true;
 	Jump();
 }
@@ -237,12 +250,17 @@ void AJetCharacter::StopJump(const FInputActionValue& Value)
 
 void AJetCharacter::PerformUpdraft(const FInputActionValue& Value)
 {
-	// 给角色一个向上的冲量
-	FVector UpwardForce = FVector(0, 0, 1000.0f); // 1000 是向上的力度，可以根据需要调整
-	LaunchCharacter(UpwardForce, true, true);
+	if (UpdraftState == ESkillState::Idle)
+	{
+		// 给角色一个向上的冲量
+		FVector UpwardForce = FVector(0, 0, 1000.0f); // 1000 是向上的力度，可以根据需要调整
+		LaunchCharacter(UpwardForce, true, true);
 
-	// 打印日志
-	UE_LOG(LogTemplateCharacter, Log, TEXT("Updraft activated!"));
+		// 打印日志
+		UE_LOG(LogTemplateCharacter, Log, TEXT("Updraft activated!"));
+	}
+	UpdraftState = ESkillState::Cooldown;
+	JetHUD->UpdateUpdraftState(UpdraftState);
 }
 
 FVector AJetCharacter::GetDashDirection() const
@@ -274,6 +292,7 @@ void AJetCharacter::ActivateTailwind()
 				UE_LOG(LogTemp, Log, TEXT("Tailwind is ready!"));
 			}, TailwindWindupTime, false);
 
+		JetHUD->UpdateTailwindState(ESkillState::Active);
 		// 添加准备状态持续时间计时器
 		GetWorld()->GetTimerManager().SetTimer(TailwindPrepareTimer, this, &AJetCharacter::CancelTailwind, TailwindPrepareTime, false);
 
@@ -282,6 +301,7 @@ void AJetCharacter::ActivateTailwind()
 
 	case ESkillState::Active:
 		// 在准备状态下执行冲刺
+		
 		ExecuteDash();
 		break;
 
@@ -312,8 +332,8 @@ void AJetCharacter::ExecuteDash()
 	LaunchCharacter(DashDirection * DashRange, true, true);
 
 	// 设置技能为冷却状态
-	//TailwindState = ESkillState::Cooldown;
-
+	TailwindState = ESkillState::Cooldown;
+	JetHUD->UpdateTailwindState(TailwindState);
 	// 清除准备状态计时器
 	GetWorld()->GetTimerManager().ClearTimer(TailwindPrepareTimer);
 
@@ -329,5 +349,16 @@ void AJetCharacter::CancelTailwind()
 	{
 		TailwindState = ESkillState::Idle;
 		UE_LOG(LogTemp, Log, TEXT("Tailwind cancelled."));
+	}
+}
+
+void AJetCharacter::IncreaseKillCount()
+{
+	CurrentKills += 1;
+	UE_LOG(LogTemp, Log, TEXT("1 Kill"));
+	if (CurrentKills == 2) {
+		CurrentKills = 0;
+		TailwindState = ESkillState::Idle;
+		JetHUD->UpdateTailwindState(TailwindState);
 	}
 }

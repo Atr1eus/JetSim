@@ -6,6 +6,7 @@
 
 #include "Public/Interface/HealthInterface.h"
 #include "JetCharacter.h"
+#include "Public/Enemy/BotCharacter.h"
 #include "Public/Component/HealthComponent.h"
 
 AJetProjectile::AJetProjectile() 
@@ -55,4 +56,17 @@ void AJetProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPr
 		}
 		Destroy();
 	}
+
+	ABotCharacter* Bot = Cast<ABotCharacter>(OtherActor);
+	if (Bot != nullptr)
+	{
+		UHealthComponent* HealthComponent = Bot->FindComponentByClass<UHealthComponent>();
+		if (HealthComponent != nullptr)
+		{
+			HealthComponent->LoseHealth(Damage);
+		}
+		Destroy();
+	}
+
+	Destroy();
 }

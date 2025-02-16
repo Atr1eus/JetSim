@@ -8,8 +8,10 @@
 
 #include "Public/Component/HealthComponent.h"
 #include "Public/Interface/HealthInterface.h"
+#include <Component/SpikeInstComponent.h>
 
 #include "JetCharacter.generated.h"
+
 
 
 
@@ -22,6 +24,7 @@ struct FInputActionValue;
 
 //生命值
 class UHealthComponent;
+class AJetHUD;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -81,6 +84,7 @@ class AJetCharacter : public ACharacter, public IHealthInterface
 public:
 	AJetCharacter();
 
+	AJetHUD* JetHUD;
 	//-----------------------Drift 被动：漂移------------------------------
 	// 默认重力比例
 	float DefaultGravityScale;
@@ -124,9 +128,24 @@ public:
 
 	int32 CurrentKills; // 当前击杀/助攻次数
 
+	UFUNCTION()
+	void IncreaseKillCount();
+
+	//-------------------------Updraft------------------------------
+	ESkillState UpdraftState;
+
 	// 状态计时器
 	FTimerHandle TailwindPrepareTimer;
 	FTimerHandle TailwindWindupTimer;
+
+	// 安装过程的状态
+	// 玩家是否在安装区域内
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Zone")
+	bool bIsPlayerInZone;
+	bool bIsInstallingSpike;
+	UPROPERTY(BlueprintReadWrite, Category = "Game State")
+	bool bIsSpikeInstalled;
+	float InstallProgress;
 
 protected:
 	virtual void BeginPlay() override;
@@ -144,6 +163,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<UHealthComponent> HealthComponent;
 
+	//安包组件
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Component")
+	TObjectPtr<USpikeInstComponent> SpikeComponent;
+
 	// Drift P 飘移
 	void StartJump(const FInputActionValue& Value);
 	void StopJump(const FInputActionValue& Value);
@@ -157,8 +180,8 @@ protected:
 	void ExecuteDash();      // 冲刺逻辑
 	void CancelTailwind();   // 准备状态结束后取消技能
 	void ResetTailwindCharge(); // 击杀/助攻后刷新技能
+	
 
-	  
 protected:
 	// APawn interface
 	virtual void NotifyControllerChanged() override;

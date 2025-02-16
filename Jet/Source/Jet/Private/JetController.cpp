@@ -4,6 +4,9 @@
 #include "JetController.h"
 #include <HUD/RestartWidget.h>
 #include "HUD/HealthWidget.h"
+#include "HUD/BeginMenuWidget.h"
+#include "HUD/JetHUD.h"
+#include <Blueprint/WidgetBlueprintLibrary.h>
 
 void AJetController::ShowRestartWidget()
 {
@@ -28,22 +31,45 @@ void AJetController::HideRestartWidget()
 	bShowMouseCursor = false;
 }
 
-void AJetController::UpdateHealthPercent(float HealthPercent)
+void AJetController::ShowMenu()
 {
-	if (HealthWidget != nullptr)
+	if (BeginMenuWidgetClass != nullptr)
 	{
-		HealthWidget->UpdateHealthPercent(HealthPercent);
+		SetPause(true);
+		SetInputMode(FInputModeUIOnly());
+
+		bShowMouseCursor = true;
+		BeginMenuWidget = CreateWidget<UBeginMenuWidget>(this, BeginMenuWidgetClass);
+		BeginMenuWidget->AddToViewport();
 	}
+}
+
+void AJetController::DestroyTopmostWidget()
+{
+	BeginMenuWidget->RemoveFromParent();
+	BeginMenuWidget->Destruct();
+	SetPause(false);
+	SetInputMode(FInputModeGameOnly());
+	bShowMouseCursor = false;
 }
 
 void AJetController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (HealthWidgetClass != nullptr) 
+	JetHUD = Cast<AJetHUD>(GetHUD());
+	if (JetHUD != nullptr)
 	{
-		HealthWidget = CreateWidget<UHealthWidget>(this, HealthWidgetClass);
-		HealthWidget->AddToViewport();
+		JetHUD->CreateHealthWidget();
+		JetHUD->ShowGameState();
+		JetHUD->ShowSkillState();
 	}
-	
+}
+
+void AJetController::UpdateHealthPercent(float HealthPercent)
+{
+	if (JetHUD != nullptr)
+	{
+		JetHUD->UpdateHealth(HealthPercent);
+	}
 }

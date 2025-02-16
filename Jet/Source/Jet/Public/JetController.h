@@ -12,6 +12,8 @@
 
 class URestartWidget;
 class UHealthtWidget;
+class UBeginMenuWidget;
+class AJetHUD;
 /**
  * 
  */
@@ -32,6 +34,11 @@ public:
 
 	void UpdateHealthPercent(float HealthPercent);
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UBeginMenuWidget> BeginMenuWidgetClass;
+
+	void ShowMenu();
+	void DestroyTopmostWidget();
 protected:
 	virtual void BeginPlay() override;
 
@@ -41,4 +48,10 @@ private:
 	
 	UPROPERTY()
 	TObjectPtr<UHealthWidget> HealthWidget;
+	
+	UPROPERTY()
+	TObjectPtr<UBeginMenuWidget> BeginMenuWidget;
+
+	UPROPERTY()
+	TObjectPtr<AJetHUD> JetHUD;
 };
